@@ -12,7 +12,7 @@ import {
 } from "@mui/material";
 import { useState } from "react";
 
-const SearchModal = ({open, setOpen, data, setCliente, tituloModal}) => {
+const SearchModal = ({open, setOpen, data, setCliente, getCuentaCorriente, tituloModal}) => {
     const handleCloseModal = () => {
         setOpen(false);
     };
@@ -31,8 +31,8 @@ const SearchModal = ({open, setOpen, data, setCliente, tituloModal}) => {
         setNombreCliente(e.target.value);
     }
 
-    const onClickChooseCliente = (clienteId) => {
-        setCliente(clienteId)
+    const onClickChooseCliente = (cliente) => {
+        setCliente(cliente)
         setOpen(false)
     }
 
@@ -54,7 +54,7 @@ const SearchModal = ({open, setOpen, data, setCliente, tituloModal}) => {
                 <List sx={{width: 500, height: 200}}>
                     {filteredClientes.map(item => (
                         <ListItem key={item.id} disablePadding>
-                            <ListItemButton onClick={() => onClickChooseCliente(item.id)}>
+                            <ListItemButton onClick={() => onClickChooseCliente(item)}>
                                 <ListItemText primary={"ID: " + item.id + " - " + item.text} />
                             </ListItemButton>
                         </ListItem>

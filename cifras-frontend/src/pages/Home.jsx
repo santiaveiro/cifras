@@ -6,7 +6,8 @@ import {
     Button,
     Container,
     Grid,
-    TextField
+    TextField,
+    Typography
 } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
@@ -21,24 +22,23 @@ const Home = () => {
     const [clienteId, setClienteId] = useState('0');
     const [openSearchCliente, setOpenSearchCliente] = useState(false);
     const [searchableClientes, setSearchableClientes] = useState([]);
-    const [selectedClientId, setSelectedClientId] = useState(null);
-    const [selectedClientName, setSelectedClientName] = useState("");
+    const [selectedClient, setClienteSelectedOnModal] = useState(null)
 
     const apiGetClienteById = async (id) => {
-        return await axios.get(`http://localhost:8081/v1/clientes/${id}`).then(res => res.data.nombre);
+        return await axios.get(`http://localhost:8080/v1/clientes/${id}/nombres`).then(res => res.data);
     }
 
     const apiGetClientes = async () => {
-        return await axios.get("http://localhost:8081/v1/clientes/nombres").then(res => res.data);
+        return await axios.get("http://localhost:8080/v1/clientes/nombres").then(res => res.data);
     }
 
     const apiGetCuentaCorriente = async (id) => {
-        return await axios.get(`http://localhost:8081/v1/cuentas-corrientes/cliente/${id}`).then(res => res.data);
+        return await axios.get(`http://localhost:8080/v1/cuentas-corrientes-clientes/${id}`).then(res => res.data);
     }
 
     const { isLoading: isLoadingClienteById, refetch: getClienteById, data: clienteById } = useQuery({
-        queryKey: ["getclientebyid", selectedClientId],
-        queryFn: () => apiGetClienteById(selectedClientId),
+        queryKey: ["getclientebyid"],
+        queryFn: () => apiGetClienteById(clienteId),
         enabled: false,
         retry: false
     });
@@ -50,20 +50,16 @@ const Home = () => {
     });
 
     const { isLoading: isLoadingCuentaCorriente, refetch: getCuentaCorriente, data: cuentaCorriente } = useQuery({
-        queryKey: ["cuentacorriente", selectedClientId],
-        queryFn: () => apiGetCuentaCorriente(selectedClientId),
+        queryKey: ["cuentacorriente"],
+        queryFn: () => apiGetCuentaCorriente(clienteId),
         enabled: false
     });
 
     useEffect(() => {
-        if (selectedClientId !== null) {
-            getCuentaCorriente();
-            if (!isLoadingClienteById && clienteById) {
-                console.log("Nombre del cliente:", clienteById);
-                setSelectedClientName(clienteById);
-            }
+        if(selectedClient) {
+            setClienteId(selectedClient.id)
         }
-    }, [selectedClientId, clienteById, isLoadingClienteById]);
+    }, [selectedClient]);
 
     const onChangeClienteId = (e) => {
         setClienteId(e.target.value);
@@ -71,17 +67,19 @@ const Home = () => {
 
     const onClickSearchCliente = () => {
         if (clienteId === '0') {
-            getAllClientes().then(res => {
-                return clientesToSearchableItems(res.data)
-            })
-            .then(data => {
-                setSearchableClientes(data)
+            if(!clientes) {
+                getAllClientes().then(res => {
+                    return clientesToSearchableItems(res.data)
+                })
+                .then(data => {
+                    setSearchableClientes(data)
+                    setOpenSearchCliente(true)
+                })
+            } else {
                 setOpenSearchCliente(true)
-            })
+            }
         } else {
-            setSelectedClientId(clienteId);
-            setOpenSearchCliente(false);
-            setSelectedClientName(""); // Limpiar el nombre del cliente cuando se selecciona un cliente específico
+            getCuentaCorriente()
         }
     }
 
@@ -124,17 +122,14 @@ const Home = () => {
                         </Button>
                     </Grid>
                     <Grid item>
-                        {selectedClientName !== null && selectedClientName !== "" && (
-                            <DynamicSpan name={selectedClientName} />
+                        {selectedClient && (
+                            <Typography variant="body1" gutterBottom sx={{marginLeft: 2}}>
+                                {selectedClient?.text}
+                            </Typography>
                         )}
                     </Grid>
                 </Grid>
                 <Grid container sx={{ marginTop: 2 }}>
-                    {selectedClientName !== null && selectedClientName !== "" && (
-                        <Grid item>
-                            <span style={{ marginLeft: 16, fontSize: '1rem', color: '#333' }}>Cliente seleccionado: {selectedClientName}</span>
-                        </Grid>
-                    )}
                     <LargeTable
                         columns={columns}
                         rows={<CuentaCorrienteTableRows data={cuentaCorriente} />}
@@ -145,11 +140,14 @@ const Home = () => {
                 open={openSearchCliente}
                 setOpen={setOpenSearchCliente}
                 data={searchableClientes}
+                /*
                 setCliente={(clientId) => {
                     setSelectedClientId(clientId);
                     setOpenSearchCliente(false);
                     setSelectedClientName(""); // Limpiar el nombre del cliente cuando se selecciona un cliente específico
-                }}
+                }} */
+                setCliente={setClienteSelectedOnModal}
+                //getCuentaCorriente={getCuentaCorriente}
                 tituloModal={"Buscar Cliente por Nombre"}
             />
         </Box>
